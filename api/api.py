@@ -186,15 +186,17 @@ async def get_model_config():
         for provider_id, provider_config in configs["providers"].items():
             models = []
             # Add models from config
-            for model_id in provider_config["models"].keys():
-                # Get a more user-friendly display name if possible
-                models.append(Model(id=model_id, name=model_id))
+            for model_id, model_config in provider_config["models"].items():
+                model_name = model_id
+                if isinstance(model_config, dict):
+                    model_name = model_config.get("name", model_id)
+                models.append(Model(id=model_id, name=model_name))
 
             # Add provider with its models
             providers.append(
                 Provider(
                     id=provider_id,
-                    name=f"{provider_id.capitalize()}",
+                    name=provider_config.get("name", f"{provider_id.capitalize()}"),
                     supportsCustomModel=provider_config.get("supportsCustomModel", False),
                     models=models
                 )

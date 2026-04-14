@@ -43,12 +43,18 @@ if is_development:
 
 import uvicorn
 
-# Check for required environment variables
-required_env_vars = ['GOOGLE_API_KEY', 'OPENAI_API_KEY']
-missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
-if missing_vars:
-    logger.warning(f"Missing environment variables: {', '.join(missing_vars)}")
-    logger.warning("Some functionality may not work correctly without these variables.")
+configured_credential_vars = [
+    "GOOGLE_API_KEY",
+    "OPENAI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "AWS_ACCESS_KEY_ID",
+]
+if not any(os.environ.get(var) for var in configured_credential_vars):
+    logger.warning(
+        "No external model credentials were found in the environment. "
+        "This is fine for fully local/Ollama setups, but hosted providers will fail until configured."
+    )
 
 # Configure Google Generative AI
 import google.generativeai as genai

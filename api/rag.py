@@ -227,6 +227,7 @@ IMPORTANT FORMATTING RULES:
         # Get model configuration based on provider and model
         from api.config import get_model_config
         generator_config = get_model_config(self.provider, self.model)
+        generator_initialize_kwargs = generator_config.get("initialize_kwargs", {})
 
         # Set up the main generator
         self.generator = adal.Generator(
@@ -237,7 +238,7 @@ IMPORTANT FORMATTING RULES:
                 "system_prompt": system_prompt,
                 "contexts": None,
             },
-            model_client=generator_config["model_client"](),
+            model_client=generator_config["model_client"](**generator_initialize_kwargs),
             model_kwargs=generator_config["model_kwargs"],
             output_processors=data_parser,
         )

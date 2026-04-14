@@ -1,0 +1,26 @@
+{
+  "default_provider": "openai",
+  "providers": {
+    "openai": {
+      "name": "Internal OpenAI-Compatible",
+      "supportsCustomModel": true,
+      "initialize_kwargs": {
+        "env_api_key_name": "INTERNAL_OPENAI_API_KEY",
+        "env_base_url_name": "INTERNAL_OPENAI_BASE_URL"
+      },
+      "default_model": "qwen3.5-32b-instruct",
+      "models": {
+        "qwen3.5-32b-instruct": {
+          "name": "Qwen 3.5 32B Instruct",
+          "temperature": 0.7,
+          "top_p": 0.8
+        },
+        "gemma-3-27b-it": {
+          "name": "Gemma 3 27B IT",
+          "temperature": 0.7,
+          "top_p": 0.8
+        }
+      }
+    }
+  }
+}

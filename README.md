@@ -270,19 +270,28 @@ The OpenAI Client's base_url configuration is designed primarily for enterprise 
 
 **Coming Soon**: In future updates, DeepWiki will support a mode where users need to provide their own API keys in requests. This will allow enterprise customers with private channels to use their existing API arrangements without sharing credentials with the DeepWiki deployment.
 
-## 🧩 Using OpenAI-Compatible Embedding Models (e.g., Alibaba Qwen)
+## 🧩 Using OpenAI-Compatible Internal Models
 
-If you want to use embedding models compatible with the OpenAI API (such as Alibaba Qwen), follow these steps:
+If you want to run DeepWiki only against an internal OpenAI-compatible API, use a custom config directory and point both generation and embedding traffic to your internal endpoints.
 
-1. Replace the contents of `api/config/embedder.json` with those from `api/config/embedder_openai_compatible.json`.
-2. In your project root `.env` file, set the relevant environment variables, for example:
+1. Create a config directory and copy:
+   - [generator.internal-openai-compatible.json.example](/Users/sanghyeok/workspace/deepwiki-open/api/config/generator.internal-openai-compatible.json.example) to `generator.json`
+   - [embedder.internal-openai-compatible.json.example](/Users/sanghyeok/workspace/deepwiki-open/api/config/embedder.internal-openai-compatible.json.example) to `embedder.json`
+2. In your project root `.env` file, set:
    ```
-   OPENAI_API_KEY=your_api_key
-   OPENAI_BASE_URL=your_openai_compatible_endpoint
+   DEEPWIKI_CONFIG_DIR=/absolute/path/to/your/config-dir
+   INTERNAL_OPENAI_API_KEY=your_internal_llm_api_key
+   INTERNAL_OPENAI_BASE_URL=http://your-internal-llm-gateway/v1
+   INTERNAL_EMBEDDING_API_KEY=your_internal_embedding_api_key
+   INTERNAL_EMBEDDING_BASE_URL=http://your-internal-embedding-gateway/v1
    ```
-3. The program will automatically substitute placeholders in embedder.json with the values from your environment variables.
+3. Start DeepWiki normally. The program will substitute placeholders in the JSON config files from your environment variables.
 
-This allows you to seamlessly switch to any OpenAI-compatible embedding service without code changes.
+Important:
+
+- `gemma` and `qwen` are chat/generation models. They do not replace an embedding model.
+- Your internal stack still needs a separate model that supports `/v1/embeddings`, such as `bge-m3`, `multilingual-e5-large`, or `nomic-embed-text`.
+- If chat and embeddings are served by the same internal OpenAI-compatible gateway, both base URLs can be the same.
 
 ## 🧠 Using Google AI Embeddings
 
@@ -422,6 +431,10 @@ docker-compose up
 | `AZURE_OPENAI_VERSION` | Azure OpenAI version                     | No | Required only if you want to use Azure OpenAI models                                                       |
 | `OLLAMA_HOST`        | Ollama Host (default: http://localhost:11434)                | No | Required only if you want to use external Ollama server                                                  |
 | `DEEPWIKI_EMBEDDER_TYPE` | Embedder type: `openai`, `google`, `ollama`, or `bedrock` (default: `openai`) | No | Controls which embedding provider to use                                                              |
+| `INTERNAL_OPENAI_API_KEY` | Internal OpenAI-compatible API key for chat models | No | Used only if your custom `generator.json` references it |
+| `INTERNAL_OPENAI_BASE_URL` | Internal OpenAI-compatible base URL for chat models | No | Used only if your custom `generator.json` references it |
+| `INTERNAL_EMBEDDING_API_KEY` | Internal OpenAI-compatible API key for embeddings | No | Used only if your custom `embedder.json` references it |
+| `INTERNAL_EMBEDDING_BASE_URL` | Internal OpenAI-compatible base URL for embeddings | No | Used only if your custom `embedder.json` references it |
 | `PORT`               | Port for the API server (default: 8001)                      | No | If you host API and frontend on the same machine, make sure change port of `SERVER_BASE_URL` accordingly |
 | `SERVER_BASE_URL`    | Base URL for the API server (default: http://localhost:8001) | No |
 | `DEEPWIKI_AUTH_MODE` | Set to `true` or `1` to enable authorization mode. | No | Defaults to `false`. If enabled, `DEEPWIKI_AUTH_CODE` is required. |

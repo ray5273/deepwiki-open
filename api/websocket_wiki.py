@@ -437,7 +437,9 @@ This file contains...
 
         prompt += f"<query>\n{query}\n</query>\n\nAssistant: "
 
-        model_config = get_model_config(request.provider, request.model)["model_kwargs"]
+        resolved_model_config = get_model_config(request.provider, request.model)
+        model_config = resolved_model_config["model_kwargs"]
+        model_initialize_kwargs = resolved_model_config.get("initialize_kwargs", {})
 
         if request.provider == "ollama":
             prompt += " /no_think"
@@ -490,7 +492,7 @@ This file contains...
                 # We'll let the OpenAIClient handle this and return an error message
 
             # Initialize Openai client
-            model = OpenAIClient()
+            model = OpenAIClient(**model_initialize_kwargs)
             model_kwargs = {
                 "model": request.model,
                 "stream": True,

@@ -26,7 +26,7 @@ Create a `.env` file in the project root:
 ```
 # Required API Keys
 GOOGLE_API_KEY=your_google_api_key        # Required for Google Gemini models
-OPENAI_API_KEY=your_openai_api_key        # Required for embeddings and OpenAI models
+OPENAI_API_KEY=your_openai_api_key        # Required for default OpenAI embeddings/OpenAI models
 
 # Optional API Keys
 OPENROUTER_API_KEY=your_openrouter_api_key  # Required only if using OpenRouter models
@@ -40,6 +40,12 @@ AWS_ROLE_ARN=your_aws_role_arn                # Optional, for role-based authent
 # OpenAI API Configuration
 OPENAI_BASE_URL=https://custom-api-endpoint.com/v1  # Optional, for custom OpenAI API endpoints
 
+# Internal OpenAI-compatible endpoints
+INTERNAL_OPENAI_API_KEY=your_internal_llm_api_key
+INTERNAL_OPENAI_BASE_URL=http://your-internal-llm-gateway/v1
+INTERNAL_EMBEDDING_API_KEY=your_internal_embedding_api_key
+INTERNAL_EMBEDDING_BASE_URL=http://your-internal-embedding-gateway/v1
+
 # Ollama host
 OLLAMA_HOST=https://your_ollama_host"  # Optional: Add Ollama host if not local. default: http://localhost:11434
 
@@ -47,7 +53,7 @@ OLLAMA_HOST=https://your_ollama_host"  # Optional: Add Ollama host if not local.
 PORT=8001  # Optional, defaults to 8001
 ```
 
-If you're not using Ollama mode, you need to configure an OpenAI API key for embeddings. Other API keys are only required when configuring and using models from the corresponding providers.
+If you're not using Ollama mode, you need an embedding backend. That can be the default OpenAI-compatible configuration (`OPENAI_API_KEY`/`OPENAI_BASE_URL`) or a separate internal embedding endpoint using the example config files below.
 
 > 💡 **Where to get these keys:**
 > - Get a Google API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
@@ -105,6 +111,22 @@ DEEPWIKI_CONFIG_DIR=/path/to/custom/config/dir  # Optional, for custom config fi
 ```
 
 This allows you to maintain different configurations for various environments or deployment scenarios without modifying the code.
+
+##### Internal OpenAI-Compatible Setup
+
+If your company exposes OpenAI-compatible APIs for both chat and embeddings, you can keep all traffic inside the company network:
+
+1. Copy [generator.internal-openai-compatible.json.example](/Users/sanghyeok/workspace/deepwiki-open/api/config/generator.internal-openai-compatible.json.example) to `generator.json` in a custom config directory.
+2. Copy [embedder.internal-openai-compatible.json.example](/Users/sanghyeok/workspace/deepwiki-open/api/config/embedder.internal-openai-compatible.json.example) to `embedder.json` in the same directory.
+3. Set `DEEPWIKI_CONFIG_DIR` to that directory.
+4. Set `INTERNAL_OPENAI_BASE_URL`/`INTERNAL_OPENAI_API_KEY` for the chat models.
+5. Set `INTERNAL_EMBEDDING_BASE_URL`/`INTERNAL_EMBEDDING_API_KEY` for the embedding model.
+
+Important:
+
+- `gemma` and `qwen` are generation models, not embedding models.
+- You still need a separate embedding model behind `/v1/embeddings`, such as `bge-m3`, `multilingual-e5-large`, `nomic-embed-text`, or another model your internal gateway serves.
+- If your internal gateway serves both chat and embeddings from the same endpoint, you can point both base URLs to the same `/v1` URL.
 
 ### Step 3: Start the API Server
 

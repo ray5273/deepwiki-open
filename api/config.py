@@ -398,15 +398,24 @@ def get_model_config(provider="google", model=None):
         "model_client": model_client,
     }
 
+    initialize_kwargs = provider_config.get("initialize_kwargs")
+    if initialize_kwargs:
+        result["initialize_kwargs"] = dict(initialize_kwargs)
+
+    # Allow config-only metadata such as display names without passing them to API clients.
+    model_runtime_params = {
+        key: value for key, value in model_params.items() if key not in {"name", "description"}
+    }
+
     # Provider-specific adjustments
     if provider == "ollama":
         # Ollama uses a slightly different parameter structure
-        if "options" in model_params:
-            result["model_kwargs"] = {"model": model, **model_params["options"]}
+        if "options" in model_runtime_params:
+            result["model_kwargs"] = {"model": model, **model_runtime_params["options"]}
         else:
             result["model_kwargs"] = {"model": model}
     else:
         # Standard structure for other providers
-        result["model_kwargs"] = {"model": model, **model_params}
+        result["model_kwargs"] = {"model": model, **model_runtime_params}
 
     return result
