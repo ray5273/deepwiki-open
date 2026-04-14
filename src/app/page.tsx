@@ -153,18 +153,29 @@ export default function Home() {
   // Fetch authentication status on component mount
   useEffect(() => {
     const fetchAuthStatus = async () => {
+      let lastError: unknown;
       try {
         setIsAuthLoading(true);
-        const response = await fetch('/api/auth/status');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          try {
+            const response = await fetch('/api/auth/status');
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setAuthRequired(Boolean(data.auth_required));
+            return;
+          } catch (err) {
+            lastError = err;
+            if (attempt < 4) {
+              await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+            }
+          }
         }
-        const data = await response.json();
-        setAuthRequired(data.auth_required);
-      } catch (err) {
-        console.error("Failed to fetch auth status:", err);
-        // Assuming auth is required if fetch fails to avoid blocking UI for safety
-        setAuthRequired(true);
+
+        console.error("Failed to fetch auth status:", lastError);
+        setAuthRequired(false);
       } finally {
         setIsAuthLoading(false);
       }

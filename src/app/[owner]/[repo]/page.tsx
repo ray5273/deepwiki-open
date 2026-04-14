@@ -349,18 +349,29 @@ export default function RepoWikiPage() {
   // Fetch authentication status on component mount
   useEffect(() => {
     const fetchAuthStatus = async () => {
+      let lastError: unknown;
       try {
         setIsAuthLoading(true);
-        const response = await fetch('/api/auth/status');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          try {
+            const response = await fetch('/api/auth/status');
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setAuthRequired(Boolean(data.auth_required));
+            return;
+          } catch (err) {
+            lastError = err;
+            if (attempt < 4) {
+              await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+            }
+          }
         }
-        const data = await response.json();
-        setAuthRequired(data.auth_required);
-      } catch (err) {
-        console.error("Failed to fetch auth status:", err);
-        // Assuming auth is required if fetch fails to avoid blocking UI for safety
-        setAuthRequired(true);
+
+        console.error("Failed to fetch auth status:", lastError);
+        setAuthRequired(false);
       } finally {
         setIsAuthLoading(false);
       }
@@ -950,6 +961,19 @@ IMPORTANT:
 
       let xmlText = xmlMatch[0];
       xmlText = xmlText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      const extractTagText = (source: string, tagName: string): string => {
+        const match = source.match(new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, 'i'));
+        return match ? match[1].trim() : '';
+      };
+      const extractTagTexts = (source: string, tagName: string): string[] => {
+        return Array.from(source.matchAll(new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, 'gi')))
+          .map(match => match[1].trim())
+          .filter(Boolean);
+      };
+      const extractAttribute = (source: string, attrName: string): string => {
+        const match = source.match(new RegExp(`${attrName}\\s*=\\s*["']([^"']+)["']`, 'i'));
+        return match ? match[1].trim() : '';
+      };
       // Try parsing with DOMParser
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, "text/xml");
@@ -1023,6 +1047,31 @@ IMPORTANT:
       const sections: WikiSection[] = [];
       const rootSections: string[] = [];
 
+      if (pages.length === 0) {
+        console.warn('No pages parsed from DOM, trying regex fallback');
+        const pageMatches = Array.from(xmlText.matchAll(/<page\b([^>]*)>([\s\S]*?)<\/page>/gi));
+        pages = pageMatches.map((match, index) => {
+          const attrs = match[1] || '';
+          const body = match[2] || '';
+          const importanceText = extractTagText(body, 'importance');
+          return {
+            id: extractAttribute(attrs, 'id') || `page-${index + 1}`,
+            title: extractTagText(body, 'title') || `Page ${index + 1}`,
+            content: '',
+            filePaths: extractTagTexts(body, 'file_path'),
+            importance: importanceText === 'high' ? 'high' : importanceText === 'low' ? 'low' : 'medium',
+            relatedPages: extractTagTexts(body, 'related')
+          };
+        });
+      }
+
+      if (!title) {
+        title = extractTagText(xmlText, 'title');
+      }
+      if (!description) {
+        description = extractTagText(xmlText, 'description');
+      }
+
       // Try to parse sections if we're in comprehensive view
       if (isComprehensiveView) {
         const sectionsEls = xmlDoc.querySelectorAll('section');
@@ -1070,6 +1119,32 @@ IMPORTANT:
             }
           });
         }
+
+        if (sections.length === 0) {
+          const sectionMatches = Array.from(xmlText.matchAll(/<section\b([^>]*)>([\s\S]*?)<\/section>/gi));
+          sectionMatches.forEach((match, index) => {
+            const attrs = match[1] || '';
+            const body = match[2] || '';
+            sections.push({
+              id: extractAttribute(attrs, 'id') || `section-${index + 1}`,
+              title: extractTagText(body, 'title') || `Section ${index + 1}`,
+              pages: extractTagTexts(body, 'page_ref'),
+              subsections: extractTagTexts(body, 'section_ref')
+            });
+          });
+
+          const referencedSections = new Set(sections.flatMap(section => section.subsections || []));
+          sections.forEach(section => {
+            if (!referencedSections.has(section.id)) {
+              rootSections.push(section.id);
+            }
+          });
+        }
+      }
+
+      if (pages.length === 0) {
+        console.error('Wiki structure response did not contain any pages:', responseText.slice(0, 1000));
+        throw new Error('Generated wiki structure did not contain any pages');
       }
 
       // Create wiki structure

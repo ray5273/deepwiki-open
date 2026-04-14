@@ -7,7 +7,7 @@
     },
     "batch_size": 100,
     "model_kwargs": {
-      "model": "qwen3-embedding",
+      "model": "embeddinggemma",
       "encoding_format": "float"
     }
   },
