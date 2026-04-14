@@ -1,0 +1,22 @@
+{
+  "embedder": {
+    "client_class": "OpenAIClient",
+    "initialize_kwargs": {
+      "api_key": "EMPTY",
+      "env_base_url_name": "VLLM_OPENAI_BASE_URL"
+    },
+    "batch_size": 100,
+    "model_kwargs": {
+      "model": "bge-m3",
+      "encoding_format": "float"
+    }
+  },
+  "retriever": {
+    "top_k": 20
+  },
+  "text_splitter": {
+    "split_by": "word",
+    "chunk_size": 350,
+    "chunk_overlap": 100
+  }
+}

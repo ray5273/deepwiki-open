@@ -116,6 +116,32 @@ This allows you to maintain different configurations for various environments or
 
 If your company exposes OpenAI-compatible APIs for both chat and embeddings, you can keep all traffic inside the company network:
 
+###### vLLM OpenAI-Compatible Gateway
+
+Use `local-config/vllm-openai-compatible/` when a shared internal vLLM `/v1` base URL serves both chat completions and embeddings.
+
+Docker Compose example:
+
+```bash
+cp .env.vllm.example .env
+# Edit VLLM_OPENAI_BASE_URL to your internal vLLM /v1 endpoint.
+docker compose up --build
+```
+
+Required environment:
+
+```bash
+DEEPWIKI_CONFIG_DIR=/app/local-config/vllm-openai-compatible
+DEEPWIKI_EMBEDDER_TYPE=openai
+VLLM_OPENAI_BASE_URL=http://your-internal-vllm-gateway/v1
+```
+
+The vLLM config sets `api_key: "EMPTY"` because the OpenAI SDK requires a key value even when vLLM is running without authentication. If your vLLM server is launched with `--api-key`, replace that value in both config files.
+
+Ensure the configured model IDs match the names exposed by vLLM. The default chat model is `qwen3.5:9b`; the default embedding model is `bge-m3`.
+
+###### Generic Internal Gateway
+
 1. Copy [generator.internal-openai-compatible.json.example](/Users/sanghyeok/workspace/deepwiki-open/api/config/generator.internal-openai-compatible.json.example) to `generator.json` in a custom config directory.
 2. Copy [embedder.internal-openai-compatible.json.example](/Users/sanghyeok/workspace/deepwiki-open/api/config/embedder.internal-openai-compatible.json.example) to `embedder.json` in the same directory.
 3. Set `DEEPWIKI_CONFIG_DIR` to that directory.
